@@ -1,0 +1,67 @@
+#!/bin/bash
+
+####
+#	Modification History (recent on top):
+#
+#	WHEN 		| WHO 	|	WHAT
+#	2022-07-09	| ILN	|	Aparadekton gia praktores...
+####
+
+
+
+source $HOME"/.bash_tede"
+# 2017-05-12 change end.
+
+
+# Important variables.
+declare        step
+declare        pgm
+declare        pgm_full_path
+declare        job_id
+declare        job_name
+declare        out_name
+
+declare -x      main_store_daily="/home/tede/n55115/Data_Files/DIAS_DIASINDESI/DIASDECRYPT/store/systemlogs/"
+declare -x      main_store_daily_in=$main_store_daily"/in/"
+
+
+# Functions.
+function chk_abnd()
+{
+  local     abnd
+  
+  abnd=$1
+  date
+  if [ $abnd -ne 0 ]; then
+    echo "Failed with status " $abnd; echo
+    #rm +++++++++++++
+    exit $abnd
+    #return $abnd
+  else
+    echo "Done"; echo
+  fi
+}
+
+
+###################################
+# Script start.
+this_job=${0##*/}
+echo $this_job " started at " `date`; echo
+
+####################################
+# Step 1
+step=STEP001
+date
+echo "STEP " $step " ..."
+echo "Call encryption script..."
+
+# 2022-07-09 change start.
+# RUN.dec_dias.bsh 1>"$main_store_daily""DIASDECRYPT.stdout.txt" 2>"$main_store_daily""DIASDECRYPT.stderr.txt"
+RUN.dec_dias_inside.bsh 1>>"$main_store_daily""DIASDECRYPT.stdout.txt" 2>>"$main_store_daily""DIASDECRYPT.stderr.txt"
+# 2022-07-09 change end.
+chk_abnd $?
+
+
+####################################
+# Script end
+echo $this_job " ended at " `date`; echo

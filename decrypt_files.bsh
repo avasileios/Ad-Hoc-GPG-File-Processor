@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# === CONFIGURATION === v2
+PASS_PHRASE="testpass"
+RUNTIME_DATE=$(date '+%Y%m%d')
+RUNTIME_TS=$(date '+%Y%m%d_%H%M%S')
+
+BASE_DIR=$(dirname "$0")
+INPUT_DIR="$BASE_DIR/input"
+OUTPUT_DIR="$BASE_DIR/output"
+TEMP_DIR="$BASE_DIR/temp"
+ARCHIVE_DIR="$BASE_DIR/processed/$RUNTIME_DATE"
+ARCHIVE_IN="$ARCHIVE_DIR/in"
+ARCHIVE_ORIG="$ARCHIVE_IN/orig"
+ARCHIVE_OT="$ARCHIVE_DIR/ot"
+LOG_DIR="$BASE_DIR/logs"
+LOG_FILE="$LOG_DIR/decrypt_$RUNTIME_TS.log"
+
+# === INIT: Logging ===
+mkdir -p "$LOG_DIR"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+# === FUNCTION: Log and check error ===
+function chk_abnd() {
+  local status=$1
+  local message=$2
+  if [ $status -ne 0 ]; then
+    echo "[ERROR] $message (status $status)" >&2
+    exit $status
+  else
+    echo "[OK] $message"
+  fi
+}
+
+# === FUNCTION: Prepare folder structure ===
+function prepare_dirs() {
+  echo "Preparing directory structure..."
+  for dir in "$INPUT_DIR" "$OUTPUT_DIR" "$TEMP_DIR" "$ARCHIVE_IN" "$ARCHIVE_ORIG" "$ARCHIVE_OT"; do
+    if [ ! -d "$dir" ]; then
+      mkdir -p "$dir"
+      chk_abnd $? "Created directory: $dir"
+    fi
+  done
+  echo
+}
+
+# === FUNCTION: Archive input files ===
+function archive_input() {
+  echo "Archiving input files..."
+  cp "$INPUT_DIR"/* "$ARCHIVE_IN" 2>/dev/null
+  chk_abnd $? "Copied input files to archive/in"
+
+  cp "$INPUT_DIR"/* "$ARCHIVE_ORIG" 2>/dev/null
+  chk_abnd $? "Copied input files to archive/in/orig"
+  echo
+}
+
+# === FUNCTION: Copy to temp ===
+function stage_to_temp() {
+  echo "Copying input files to temp for processing..."
+  cp "$INPUT_DIR"/* "$TEMP_DIR" 2>/dev/null
+  chk_abnd $? "Copied files to temp"
+  echo
+}
+
+# === FUNCTION: Decrypt files ===
+function decrypt_files() {
+  echo "Decrypting files..."
+  cd "$TEMP_DIR" || exit 1
+  for f in *; do
+    [ -f "$f" ] || continue
+    filename="${f%.*}"
+    echo "Processing: $f -> $filename"
+
+    echo "$PASS_PHRASE" | gpg --passphrase-fd 0 --batch --force-mdc --output "$filename" -d "$f"
+    chk_abnd $? "Decrypted $f"
+
+    unix2dos "$filename"
+    chk_abnd $? "Converted $filename to DOS format"
+  done
+  echo
+}
+
+# === FUNCTION: Move decrypted files ===
+function move_decrypted() {
+  echo "Moving decrypted files to output and archive..."
+  shopt -s extglob
+  cp !(*.pgp|*.PGP) "$OUTPUT_DIR" 2>/dev/null
+  chk_abnd $? "Copied decrypted files to output"
+
+  mv !(*.pgp|*.PGP) "$ARCHIVE_OT" 2>/dev/null
+  chk_abnd $? "Moved decrypted files to archive/ot"
+  shopt -u extglob
+  echo
+}
+
+# === FUNCTION: Cleanup ===
+function cleanup() {
+  echo "Cleaning up temp and input folders..."
+  rm -f "$TEMP_DIR"/*
+  rm -f "$INPUT_DIR"/*
+  chk_abnd $? "Cleaned temp and input"
+  echo
+}
+
+# === MAIN ===
+echo "--- Decryption Script Started at $(date) ---"
+
+prepare_dirs
+archive_input
+stage_to_temp
+decrypt_files
+move_decrypted
+cleanup
+
+echo "--- Decryption Script Finished at $(date) ---"
+exit 0

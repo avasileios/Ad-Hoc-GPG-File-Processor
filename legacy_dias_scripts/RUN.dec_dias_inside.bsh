@@ -1,0 +1,221 @@
+#!/bin/bash
+
+
+
+source $HOME"/.bash_tede"
+# 2017-05-12 change end.
+
+
+# Important variables.
+declare        step
+declare        pgm
+declare        pgm_full_path
+declare        job_id
+declare        job_name
+declare        out_name
+declare        err_name
+declare        DN99PARM
+
+
+declare -x     	fv_file="/home/tede/n55115/Data_Files/SAPRUN12/SAPTOBANK/FV20"$BTCH_DATE_m1"_F0002.txt"
+declare -x     	dd_file="/home/tede/n55115/Data_Files/SAPRUN12/SAPTOBANK/DD20"$BTCH_DATE_m1"_00001.txt"
+declare -x	   	main_dir="/home/tede/n55115/Joblib/House_Keeping/DIAS_EMPLOUTISMOS/"
+declare -x	  	main_dir_in="/home/tede/n55115/Data_Files/DIAS_DIASINDESI/DIASDECRYPT/in/"
+declare -x 		main_dir_ot="/home/tede/n55115/Data_Files/DIAS_DIASINDESI/DIASDECRYPT/ot/"
+declare -x      main_scripts="/home/tede/n55115/Joblib/House_Keeping/DIAS_EMPLOUTISMOS/DECRYPTDIAS/PROD/"
+declare -x      main_temp="/home/tede/n55115/Data_Files/DIAS_DIASINDESI/DIASDECRYPT/TEMP/"
+declare -x      main_store="/home/tede/n55115/Data_Files/DIAS_DIASINDESI/DIASDECRYPT/store/"
+declare -x      main_store_daily="/home/tede/n55115/Data_Files/DIAS_DIASINDESI/DIASDECRYPT/store/""$BTCH_DATE_s0"
+declare -x      main_store_daily_in=$main_store_daily"/in/"
+declare -x      main_store_daily_ot=$main_store_daily"/ot/"
+declare -x      main_store_daily_orig=$main_store_daily"/in/orig/"
+declare -x 		flag=0
+
+
+
+# Constants.
+readonly       ARGS_NBR=0
+
+
+# Functions.
+function chk_abnd()
+{
+  local     abnd
+  
+  abnd=$1
+  date
+  if [ $abnd -ne 0 ]; then
+    echo "Failed with status " $abnd; echo
+    #rm +++++++++++++
+    exit $abnd
+    #return $abnd
+  else
+    echo "Done"; echo
+  fi
+}
+
+function constr_job_name()
+{
+  job_name=$JOB_PRF$JOB_SUF
+  out_name=$JOB_PRF$LST_SUF
+  err_name=$JOB_PRF$ERR_SUF
+  
+  return 0
+}
+
+function chk_args()
+{
+  local        nbr_args=$1
+  
+  if [ $nbr_args -ne $ARGS_NBR ]; then
+      echo "Wrong number of parameters = " $nbr_args
+      echo "Usage: " $this_job " DN99PARM<nn>"
+      exit 69
+  fi
+  
+  DN99PARM=$2
+  constr_job_name
+  
+  return 0
+}
+
+
+
+function mkdir_timestamp()
+{
+
+	# Called as: mkdir_timestamp $main_store $BTCH_DATE_s0
+	# Called as: mkdir_timestamp <base directory> <datepattern>
+
+
+	local base_dir=$1
+	local date_in=$2
+	local compound=$base_dir$date_in
+	local compound_in=$compound"/in"
+	local compound_ot=$compound"/ot"
+	local compound_orig=$compound"/in/orig"
+	echo $compound
+	
+	# check if dir exists
+	
+	if [ -d "$base_dir" ]; then
+		if [ ! -d "$compound" ]; then
+			mkdir $compound
+			mkdir $compound_in
+			mkdir $compound_ot
+			mkdir $compound_orig
+		else
+			echo "Directory: $compound already exists. Terminating"
+			exit 1
+		fi
+	else	
+		echo "Directory: $base_dir could not be located. Terminating"
+		exit 1
+	fi
+
+
+}
+###################################
+# Script start.
+this_job=${0##*/}
+echo $this_job " started at " `date`; echo
+
+
+
+###################################
+# Step 1 - Make new dir in store with timestamp
+step=STEP004
+date
+echo "STEP " $step " ..."
+echo "Make new dir in storage, with timestamp..."
+mkdir_timestamp $main_store $BTCH_DATE_s0
+chk_abnd $?
+
+
+#read -p "Press [Enter] key to start backup..."
+
+
+#####################################
+# Step 2 - Move all input files from /in to /store/date/in 
+step=STEP004
+date
+echo "STEP " $step " ..."
+echo "Move all input files from /in to /store/date/in...."
+cp $main_dir_in* $main_store_daily_in
+chk_abnd $?
+cp $main_dir_in*  $main_store_daily_orig
+chk_abnd $?
+
+#read -p "Press [Enter] key to start backup..."
+
+
+###################################
+# Step 4 - Copy files to temp folder for process
+step=STEP004
+date
+echo "STEP " $step " ..."
+echo "Copying file to temp folder for process"
+
+cp $main_dir_in* $main_temp
+chk_abnd $?
+
+#read -p "Press [Enter] key to start backup..."
+
+
+####################################
+# Step 5 - Process files
+step=STE005
+date
+echo "STEP " $step " ..."
+cd $main_temp
+echo "Processing ot files in temporary directory: $main_temp"
+
+cd $main_temp
+
+
+for f in "$main_temp"*
+do	
+	echo "Processing $f"
+	echo "Decrypting $f"
+	filename=$(basename -- "$f")
+	extension="${filename##*.}"
+	filename="${filename%.*}"
+	echo $filename
+	echo $extension
+	#echo "testpass" | gpg --passphrase-fd 0 --batch --output $filename -d $f 2>/dev/null
+	echo "testpass" | gpg --passphrase-fd 0 --batch --force-mdc --output $filename -d $f
+	chk_abnd $?
+	#dos2unix $filename 2>/dev/null
+	#dos2unix $filename
+	unix2dos $filename
+	#mv $filename $main_dir_ot
+	#mv $filename $main_store_daily_ot
+done
+
+
+######################################
+# Step 6 - Move ready files to store/ot and /ot
+step=STE005
+date
+echo "STEP " $step " ..."
+cd $main_temp
+echo "Moving decrypted file to output and store"
+
+shopt -s extglob
+cp !(*.PGP) $main_dir_ot
+chk_abnd $?
+cp !(*.001.pgp) $main_dir_ot
+chk_abnd $?
+mv !(*.PGP) $main_store_daily_ot
+chk_abnd $?
+mv !(*.001.pgp) $main_store_daily_ot
+chk_abnd $?
+rm *
+#shopt -u extglob
+
+cd $main_dir_in
+rm *
+
+shopt -u extglob
+
+
