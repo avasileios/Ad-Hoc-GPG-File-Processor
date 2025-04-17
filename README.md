@@ -57,8 +57,7 @@ project-folder/
 
 ### 2. Directory Preparation
 
-- Ensures all required directories (`input`, `output`, `temp`, `logs`, and date-based archive folders) exist.
-- Creates them if missing.
+- Ensure required directory  (`input`) containing .pgp files exist
 
 ### 3. Input Archival
 
