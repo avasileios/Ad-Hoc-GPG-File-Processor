@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a complete and professional-level documentation of the custom Bash script developed to replace and improve a vital GPG-based decryption pipeline.
+This document provides a complete documentation of the custom Bash script developed to replace and improve a vital GPG-based decryption pipeline.
 
 The new solution retains the exact logic and flow of the original scripts while eliminating dependencies on environment-based date variables. It is designed to be secure, robust, and easily executable manually (ad hoc), whenever needed.
 
