@@ -1,196 +1,129 @@
-# Decryption Script: Ad Hoc GPG File Processor Va. Antonopoulos
+# 🔐 Decryption Script: Ad Hoc GPG File Processor  
+*Author: Va. Antonopoulos*
 
-## Overview
-
-This document provides a complete documentation of the custom Bash script developed to replace and improve a vital GPG-based decryption pipeline.
-
-The new solution retains the exact logic and flow of the original scripts while eliminating dependencies on environment-based date variables. It is designed to be secure, robust, and easily executable manually (ad hoc), whenever needed.
-
----
-
-## Goals
-
-- Replace legacy batch-script system dependent on environment (`.bash_tede`, batch date variables)
-- Keep **identical decryption behavior** as original
-- Allow **manual, ad hoc execution**
-- **Log all actions** to file and display key output live
-- Ensure **safe, production-ready file handling** and error catching
+![Bash](https://img.shields.io/badge/Script-Bash-blue?style=for-the-badge&logo=gnubash)
+![GPG](https://img.shields.io/badge/Security-GPG-green?style=for-the-badge&logo=gnuprivacyguard)
+![Logs](https://img.shields.io/badge/Logging-Enabled-orange?style=for-the-badge&logo=files)
+![License](https://img.shields.io/badge/License-MIT-lightgrey?style=for-the-badge)
 
 ---
 
-## Technologies Used
+## 📌 Overview
+A custom **Bash script** designed to **replace and improve a legacy GPG-based decryption pipeline**.  
+The script replicates the original logic but removes fragile environment dependencies, making it **secure, robust, and executable manually (ad hoc)** whenever needed.  
 
-- Language: **Bash shell script**
-- Tools:
-  - `gpg` for decryption
-  - `unix2dos` for line-ending conversion
-  - Core Unix utilities: `mkdir`, `cp`, `mv`, `rm`, `date`, `tee`
+👉 For sysadmins:  
+This ensures **safe decryption, proper archiving, and full traceability** with minimal dependencies.  
 
 ---
 
-## Directory Layout
+## 🎯 Goals
+- 🛠️ Replace legacy batch-script system (environment `.bash_tede`)  
+- 🔑 Maintain **identical decryption behavior**  
+- ⚡ Enable **manual ad hoc execution**  
+- 📜 Log all actions (file + console)  
+- 🛡️ Ensure **safe file handling and error catching**  
 
-All operations are structured within the folder where the script resides:
+---
 
+## 💾 Technologies Used
+- **Language**: Bash shell script  
+- **Tools**:  
+  - `gpg` → file decryption  
+  - `unix2dos` → line-ending conversion  
+  - Core Unix utilities: `mkdir`, `cp`, `mv`, `rm`, `date`, `tee`  
+
+---
+
+## 📂 Directory Layout
 ```
 project-folder/
 ├── decrypt_files.bsh              # Main executable script
-├── input/                         # Encrypted .pgp files placed here
-├── temp/                          # Temporary staging for processing
+├── input/                         # Encrypted .pgp files
+├── temp/                          # Staging area
 ├── output/                        # Final decrypted files
-├── processed/                     # Daily archive folder structure
+├── processed/                     # Daily archive
 │   └── YYYYMMDD/
-│       ├── in/                    # Backup of input files
-│       ├── in/orig/              # Backup of original input files
-│       └── ot/                   # Archived decrypted output
+│       ├── in/                    # Backup of inputs
+│       ├── in/orig/               # Original inputs
+│       └── ot/                    # Archived decrypted output
 └── logs/                          # Timestamped execution logs
 ```
 
 ---
 
-## Script Workflow Summary
+## 🔄 Script Workflow
 
-### 1. Initialization
-
-- Current runtime date (`YYYYMMDD`) and timestamp are calculated.
-- Logging is initialized: `logs/decrypt_YYYYMMDD_HHMMSS.log`
-
-### 2. Directory Preparation
-
-- Ensure required directory  (`input`) containing .pgp files exist
-
-### 3. Input Archival
-
-- All `.pgp` files in `input/` are copied to:
-  - `processed/YYYYMMDD/in/`
-  - `processed/YYYYMMDD/in/orig/`
-
-### 4. Staging for Decryption
-
-- Input files are copied to the `temp/` folder for isolated processing.
-
-### 5. File Decryption
-
-- Each file is decrypted using `gpg` with passphrase `"testpass"`.
-- Decrypted output is written using the original filename (without extension).
-- Files are converted from Unix to DOS format using `unix2dos`.
-
-### 6. Output Handling
-
-- Decrypted files are copied to:
-  - `output/`
-  - `processed/YYYYMMDD/ot/`
-
-### 7. Cleanup
-
-- All processed files in `temp/` and `input/` are deleted.
+1. **Initialization** – Set date/time, start log file.  
+2. **Directory Preparation** – Create missing folders.  
+3. **Input Archival** – Copy `.pgp` files → archive (`in/`, `in/orig/`).  
+4. **Staging** – Copy input files → `temp/`.  
+5. **Decryption** – Run `gpg`, strip extension, convert with `unix2dos`.  
+6. **Output Handling** – Move decrypted files → `output/` + archive (`ot/`).  
+7. **Cleanup** – Delete processed files in `input/` + `temp/`.  
 
 ---
 
-## Logging
-
-- All output is simultaneously:
-  - Written to `logs/decrypt_YYYYMMDD_HHMMSS.log`
-  - Echoed to the console for live monitoring
-- Logs include:
-  - Folder creation status
-  - File processing steps
-  - Success or error indicators with exit codes
+## 📝 Logging
+- 📂 `logs/decrypt_YYYYMMDD_HHMMSS.log` created for each run  
+- 🔄 Logs are written **to both console and file** with `tee`  
+- ✅ Includes: folder creation, file handling steps, success/error messages  
 
 ---
 
-## Security Considerations
-
-- Passphrase  is hardcoded (as per legacy logic)
-- GPG must have access to the correct private key
-- No files are processed in-place; all processing is isolated to a temporary workspace
+## 🔒 Security Considerations
+- Passphrase is **hardcoded** (legacy requirement)  
+- Requires GPG private key access  
+- Files never processed in-place → ensures data integrity  
 
 ---
 
-## Usage
-
-1. Place encrypted `.pgp` files into the `input/` directory
-2. Run the script:
+## 🚀 Usage
+1. Place `.pgp` files into the `input/` folder.  
+2. Run the script:  
    ```bash
    ./decrypt_files.bsh
    ```
-3. Results will be:
-   - Decrypted in `output/`
-   - Archived in `processed/YYYYMMDD/`
-   - Log stored in `logs/`
+3. Results:  
+   - 📂 Decrypted → `output/`  
+   - 📦 Archived → `processed/YYYYMMDD/`  
+   - 📝 Log → `logs/`  
 
 ---
 
-## Dependencies
-
-- `bash`
-- `gpg` (configured with necessary private key)
-- `unix2dos` (installable via `dos2unix` package)
-
----
-
-## Code Explanation
-
-### Configuration Section
-
-Initializes constants, working directories, and calculates current date/time values for runtime use. All paths are relative to the script's own directory.
-
-### Logging Initialization
-
-All output from the script is captured using `tee` to write both to screen and a timestamped log file under `logs/`.
-
-### Function: `chk_abnd`
-
-Central error-checking function. If the previous command failed (`$? != 0`), the script exits with an error. Otherwise, it prints a success message.
-
-### Function: `prepare_dirs`
-
-Ensures that the `input/`, `output/`, `temp/`, archive folders, and logs directory all exist. Creates any missing ones.
-
-### Function: `archive_input`
-
-Copies all input `.pgp` files to both `processed/YYYYMMDD/in/` and `in/orig/`, maintaining backup records of the encrypted input.
-
-### Function: `stage_to_temp`
-
-Copies files from `input/` to `temp/` where decryption happens. Prevents in-place modification of input files.
-
-### Function: `decrypt_files`
-
-Processes each file:
-
-- Strips extension for output name
-- Pipes the hardcoded passphrase to `gpg`
-- Converts decrypted file to DOS format
-
-### Function: `move_decrypted`
-
-Uses `bash` extended globbing to:
-
-- Copy all non-`.pgp` files to the output folder
-- Move them to the archive (`ot/`) folder
-
-### Function: `cleanup`
-
-Deletes all files in `input/` and `temp/` to leave a clean state for the next run.
-
-### Main Script Block
-
-Runs all the above functions in a safe order:
-
-1. Prepare directories
-2. Archive inputs
-3. Stage to temp
-4. Decrypt files
-5. Move outputs
-6. Cleanup temp and input
-
-Each step is logged in real time.
+## 📦 Dependencies
+- `bash`  
+- `gpg` (with correct private key configured)  
+- `unix2dos` (from `dos2unix` package)  
 
 ---
 
-## Conclusion
+## 🛠️ Code Highlights
 
-This redesigned decryption pipeline ensures reliability, traceability, and safe execution while freeing the process from rigid batch scheduling. It is suitable for manual use by operations or system admins, and easily integrates into larger automation systems if needed later.
+### 🔧 Functions
+- **`chk_abnd`** → Error handler, exits on failure.  
+- **`prepare_dirs`** → Ensures required directories exist.  
+- **`archive_input`** → Backups all `.pgp` inputs.  
+- **`stage_to_temp`** → Copies files to temp for processing.  
+- **`decrypt_files`** → Runs GPG decryption + converts to DOS format.  
+- **`move_decrypted`** → Copies final files to output + archives.  
+- **`cleanup`** → Removes processed temp/input files.  
 
-The system is modular, well-logged, and adheres to best practices for error handling and file safety.
+### 🗂️ Main Script Flow
+1. Prepare dirs  
+2. Archive inputs  
+3. Stage → temp  
+4. Decrypt files  
+5. Move outputs  
+6. Cleanup  
+
+---
+
+## ✅ Conclusion
+This redesigned **GPG decryption pipeline** is:  
+- 🔐 Secure  
+- ⚡ Reliable  
+- 📜 Fully logged  
+- 🛠️ Easy to run manually  
+
+It’s ready for **system admins** handling sensitive files and can be integrated into **automation workflows** if needed.  
